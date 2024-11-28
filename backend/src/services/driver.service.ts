@@ -10,10 +10,9 @@ export class DriverService {
   async fetchDrivers(distance: number) {
     try {
       const avaliableDrivers = await db.select().from(drivers).where(lte(drivers.min_distance, distance));
-      
+
       const driverWithValue = avaliableDrivers.map(driver => {
-        // const distanceInKm = distance / 1000;
-        const rideValue = distance * parseFloat(driver.value.toString());
+        const rideValue = (distance / 1000) * parseFloat(driver.value.toString()); 
         const review = JSON.stringify(driver.review);
         return {
           id: driver.id,
@@ -23,7 +22,7 @@ export class DriverService {
           review: JSON.parse(review),
           value: rideValue,
         }
-      })
+      });
 
       driverWithValue.sort((a, b) => a.value - b.value);
 
@@ -32,28 +31,55 @@ export class DriverService {
       }
 
       return driverWithValue;
-      
+
     } catch (error) {
       console.error(error);
     }
   }
 
-  async verifyDriver(driverId: number, distance: number, res: Response) {
+  /* Retorna todos os motoristas */
+  async fetchAllDrivers() {
+    try {
+      const allDrivers = await db.select().from(drivers);
+      return allDrivers;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
+
+  /* Verifica se o motorista é válido */
+  private async verifyValidDriver(driverId: number, res: Response) {
     try {
       const driver = await db.select().from(drivers).where(eq(drivers.id, driverId));
       if(driver.length === 0) {
         errorHandler(res, 404, "Os dados fornecidos no corpo da requisição são inválidos", "INVALID_DRIVER");
-        return;
+        return false; // Motorista não encontrado
       }
-
-      if(driver[0].min_distance > distance) {
-        errorHandler(res, 406, "Quilometragem inválida para o motorista", "INVALID_DISTANCE");
-        return;
-      }
-
-      return true;
+      return driver[0]; // Retorna o motorista se encontrado
     } catch (error) {
       console.error(error);
+      return false;
     }
+  }
+
+  /* Verifica se a distância é válida para o motorista */
+  private verifyValidDistance(driver: any, distance: number, res: Response) {
+    if(driver.min_distance > distance) {
+      errorHandler(res, 406, "Quilometragem inválida para o motorista", "INVALID_DISTANCE");
+      return false; // Distância inválida
+    }
+    return true; // Distância válida
+  }
+
+  /* Função principal para verificar se o motorista e a distância são válidos */
+  async verifyDriver(driverId: number, distance: number, res: Response) {
+    const driver = await this.verifyValidDriver(driverId, res);
+    if (!driver) return; // Se o motorista não for válido, retorna
+
+    const isValidDistance = this.verifyValidDistance(driver, distance, res);
+    if (!isValidDistance) return; // Se a distância não for válida, retorna
+
+    return true; // Motorista e distância válidos
   }
 }

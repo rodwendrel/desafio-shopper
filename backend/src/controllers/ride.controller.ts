@@ -1,21 +1,19 @@
-import { Request, Response, } from 'express';
+import { Request, Response } from 'express';
 import { RideService } from '../services/ride.service';
-import { Ride } from '../types/ride.type';
 
 const rideService = new RideService();
 
 export class RideController {
 
-  async estimate(req: Request, res: Response) {
+  async estimate(req: Request, res: Response): Promise<void> {
     const { customer_id, origin, destination } = req.body;
-    const response = await rideService.estimate(customer_id, origin, destination, res);
-    res.send(response);
+    await rideService.estimate(customer_id, origin, destination, res);
   }
 
-  async confirm(req: Request, res: Response) {
+  async confirm(req: Request, res: Response): Promise<void> {
     const { customer_id, origin, distance, destination, duration, driver, value } = req.body;
 
-    const response = await rideService.confirm({
+    await rideService.confirm({
       customer_id,
       origin,
       distance,
@@ -24,12 +22,12 @@ export class RideController {
       driver,
       value,
     }, res);
-    res.send(response);
   }
   
-  async getRide(req: Request, res: Response) {
+  async getRide(req: Request, res: Response): Promise<void> {
     const { customer_id } = req.params;
-    const response = await rideService.getRide(customer_id, res);
+    const { driver_id } = req.query;
+    const response = await rideService.getRide(customer_id, res, typeof driver_id === 'string' ? driver_id : undefined);
     res.send(response);
   }
 }

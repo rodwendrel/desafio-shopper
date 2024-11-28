@@ -9,4 +9,9 @@ export class DriverController {
     const response = await driverService.fetchDrivers(+(distance || 0));
     res.send(response);
   }
+
+  async fetchAllDrivers(req: Request, res: Response) {
+    const response = await driverService.fetchAllDrivers();
+    res.send(response);
+  }
 }

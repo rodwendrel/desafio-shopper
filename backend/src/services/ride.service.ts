@@ -6,7 +6,7 @@ import { db } from "../db/client";
 import { GOOGLE_API_KEY, GEOCODE_URL, DIRECTIONS_URL } from "../utils/constants";
 import { rides } from "../db/schema";
 import { Ride } from "../types/ride.type";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 const driverService = new DriverService();
 export class RideService {
@@ -116,44 +116,42 @@ export class RideService {
 
   /* Método para confirmar a corrida */
   async confirm({ customer_id, origin, distance, destination, duration, driver, value }: Ride, res: Response) {
-
-    if(!origin || !destination) {
+    // Validação dos parâmetros obrigatórios
+    if (!origin || !destination) {
       errorHandler(res, 400, "Os endereços de origem e destino não podem estar em branco!");
       return;
     }
 
-    if(!customer_id) {
+    if (!customer_id) {
       errorHandler(res, 400, "O Id do usuário não pode estar em branco!");
       return;
     }
 
-    if(origin === destination) {
+    if (origin === destination) {
       errorHandler(res, 400, "Os endereços de origem e destino não podem ser iguais!");
       return;
     }
 
-    // Verificar se uma opção de motorista foi informada e é válida
     if (!driver) {
       errorHandler(res, 404, "Uma opção de motorista deve ser informada!", "DRIVER_NOT_FOUND");
       return;
     }
 
     const verifyDriver = await driverService.verifyDriver(driver.id, distance, res);
-
-
-    if(!verifyDriver) {
-      return;
+    if (!verifyDriver) {
+      return; 
     }
 
+    // Inserir a corrida no banco de dados
     try {
       await db.insert(rides).values({
         customer_id,
         origin,
         destination,
         duration: duration.toString(),
-        driver: { id: driver.id, name: driver.name }, 
+        driver: { id: driver.id, name: driver.name },
         value: value.toString(),
-      });   
+      });
       res.status(200).send({
         description: "Operação realizada com sucesso!",
         success: true,
@@ -167,14 +165,24 @@ export class RideService {
     }
   }
 
-  async getRide(customer_id: string, res: Response) {
+  async getRide(customer_id: string, res: Response, driver_id?: string) {
+
+    console.log(driver_id)
     if(!customer_id) {
       errorHandler(res, 400, "Os dados fornecidos no corpo da requisição são inválidos");
       return;
     }
 
     try {
-      const ride = await db.select().from(rides).where(eq(rides.customer_id, customer_id))
+      const ride = await db.select().from(rides).where(
+        and(
+          driver_id ? eq(sql`rides.driver->>'id'`, driver_id) : undefined,
+          eq(rides.customer_id, customer_id)
+        ),
+      );
+
+   
+  
       return ride;
     } catch (error) {
       console.log(error)

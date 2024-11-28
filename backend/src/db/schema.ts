@@ -21,6 +21,6 @@ export const rides = pgTable("rides", {
   origin: varchar({ length: 255 }).notNull(),
   destination: varchar({ length: 255 }).notNull(),
   duration: varchar({ length: 255 }).notNull(),
-  driver: json().notNull(),
+  driver: json(),
   value: numeric().notNull(),
 });
