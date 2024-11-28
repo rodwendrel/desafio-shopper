@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import AutoInput from "./auto-input";
 import ListDrivers from "./list-drivers";
@@ -18,7 +19,7 @@ export default function Form() {
     destinationLng: number;
     encodedPolyline: string;
   }
-  
+
   const [mapData, setMapData] = useState<MapData | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -30,8 +31,11 @@ export default function Form() {
         destination,
       });
 
-      
-      const { origin: originCoords, destination: destinationCoords, routeResponse } = response.data.resposta;
+      const {
+        origin: originCoords,
+        destination: destinationCoords,
+        routeResponse,
+      } = response.data.resposta;
       const encodedPolyline = routeResponse.routes[0].polyline.encodedPolyline;
       setMapData({
         originLat: originCoords.latitude,
@@ -40,10 +44,9 @@ export default function Form() {
         destinationLng: destinationCoords.longitude,
         encodedPolyline,
       });
-      setDrivers(response.data.resposta.options); 
+      setDrivers(response.data.resposta.options);
       setDistance(routeResponse.routes[0].distance);
       setDuration(routeResponse.routes[0].duration);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const message = error.response.data.error_description;
       alert(message);
@@ -52,43 +55,53 @@ export default function Form() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-1/2">
-        <div className="flex flex-col">
-          <label>Id de usuário</label>
-          <input
-            type="text"
-            value={customer_id}
-            placeholder="Digite o id do usuário"
-            className="border border-gray-300 rounded-md p-1"
-            onChange={(e) => setCostumer_id(e.target.value)}
-            required
+      <div className="text-center space-y-2">
+        <h1 className=" font-bold text-4xl mt-5">
+          Calcule sua viagem
+        </h1>
+        <p>
+          Informe os endereços de origem e destino junto ao seu ID para começar
+        </p>
+      </div>
+      <div className="flex items-center justify-between mt-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-1/2">
+          <div className="flex flex-col">
+            <label>Id de usuário</label>
+            <input
+              type="text"
+              value={customer_id}
+              placeholder="Digite o id do usuário"
+              className="border border-gray-300 rounded-md p-1"
+              onChange={(e) => setCostumer_id(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex flex-col">
+            <label>Origem:</label>
+            <AutoInput onSelect={setOrigin} />
+          </div>
+          <div className="flex flex-col">
+            <label>Destino:</label>
+            <AutoInput onSelect={setDestination} />
+          </div>
+          <button
+            className="bg-blue-600 rounded-md p-2 flex items-center justify-center text-white hover:bg-blue-700"
+            type="submit"
+          >
+            Enviar
+          </button>
+        </form>
+        {mapData && (
+          <StaticMap
+            originLat={mapData.originLat}
+            originLng={mapData.originLng}
+            destinationLat={mapData.destinationLat}
+            destinationLng={mapData.destinationLng}
+            encodedPolyline={mapData.encodedPolyline}
           />
-        </div>
-        <div className="flex flex-col">
-          <label>Origem:</label>
-          <AutoInput onSelect={setOrigin} />
-        </div>
-        <div className="flex flex-col">
-          <label>Destino:</label>
-          <AutoInput onSelect={setDestination} />
-        </div>
-        <button
-          className="bg-blue-600 rounded-md p-2 flex items-center justify-center text-white hover:bg-blue-700"
-          type="submit"
-        >
-          Enviar
-        </button>
-      </form>
-      {mapData && (
-        <StaticMap
-          originLat={mapData.originLat}
-          originLng={mapData.originLng}
-          destinationLat={mapData.destinationLat}
-          destinationLng={mapData.destinationLng}
-          encodedPolyline={mapData.encodedPolyline}
-        />
-      )}
-      <ListDrivers 
+        )}
+      </div>
+      <ListDrivers
         drivers={drivers}
         customer_id={customer_id}
         origin={origin}

@@ -23,7 +23,8 @@ interface RideHistoryProps {
   customer_id: string;
 }
 
-export default function RideHistory({ customer_id }: RideHistoryProps) {
+export default function RideHistory({ customer_id: initialCustomerId }: RideHistoryProps) {
+  const [customerId, setCustomerId] = useState<string>(initialCustomerId); 
   const [driverId, setDriverId] = useState<string | undefined>(""); 
   const [rides, setRides] = useState<Ride[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]); 
@@ -40,13 +41,13 @@ export default function RideHistory({ customer_id }: RideHistoryProps) {
   };
 
   const fetchRides = async () => {
-    if (!customer_id) {
+    if (!customerId) {
       alert("O Id do usuário é obrigatório.");
       return;
     }
     try {
       const params = driverId ? { driver_id: driverId } : {}; 
-      const response = await api.get(`/ride/${customer_id}`, { params });
+      const response = await api.get(`/ride/${customerId}`, { params });
       setRides(response.data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -59,24 +60,30 @@ export default function RideHistory({ customer_id }: RideHistoryProps) {
     fetchDrivers();
   }, []);
 
+  const formatValueInBRL = (value: number) => {
+    const roundedValue = Number(value).toFixed(2);
+    return Number(roundedValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
+
   return (
-    <div className="mt-5">
+    <div className="mt-5 ">
       <h2 className="font-bold text-xl">Histórico de Corridas</h2>
 
-      <div className="mb-5">
+      <div className="mb-5 flex items-center">
         <div className="flex gap-4">
-          <div>
+          <div className="flex items-center gap-2">
             <label htmlFor="customer_id">ID do Usuário:</label>
             <input
               id="customer_id"
               type="text"
-              value={customer_id}
+              value={customerId} 
+              onChange={(e) => setCustomerId(e.target.value)}
               className="border rounded-md p-1"
-              readOnly 
             />
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
             <label htmlFor="driver_id">Selecione o Motorista:</label>
             <select
               id="driver_id"
@@ -110,7 +117,7 @@ export default function RideHistory({ customer_id }: RideHistoryProps) {
               <p><strong>Destino:</strong> {ride.destination}</p>
               <p><strong>Distância:</strong> {ride.distance} km</p>
               <p><strong>Duração:</strong> {ride.duration}</p>
-              <p><strong>Valor:</strong> {ride.value}</p>
+              <p><strong>Valor:</strong> {formatValueInBRL(ride.value)}</p>
               <p><strong>Motorista:</strong> {ride.driver.name}</p>
             </li>
           ))}
